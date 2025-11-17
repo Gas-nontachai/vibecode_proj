@@ -19,6 +19,18 @@ type SessionState =
   | { status: "error"; message: string }
   | { status: "success" };
 
+const clearAuthParamsFromUrl = (removeCodeParam?: boolean) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.hash = "";
+  if (removeCodeParam) {
+    url.searchParams.delete("code");
+  }
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
+};
+
 export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
   const supabase = useMemo(() => createClient(), []);
   const [sessionState, setSessionState] = useState<SessionState>({ status: "verifying" });
@@ -26,6 +38,28 @@ export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [resolvedCode, setResolvedCode] = useState(code);
+  const [hasCheckedCodeParam, setHasCheckedCodeParam] = useState(Boolean(code));
+
+  useEffect(() => {
+    if (code) {
+      setResolvedCode(code);
+      setHasCheckedCodeParam(true);
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      setHasCheckedCodeParam(true);
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = params.get("code");
+    if (codeParam) {
+      setResolvedCode(codeParam);
+    }
+    setHasCheckedCodeParam(true);
+  }, [code]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,18 +86,15 @@ export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
           setSessionState({ status: "error", message: sessionError.message });
         } else {
           setSessionState({ status: "ready" });
-          if (typeof window !== "undefined") {
-            window.history.replaceState(
-              {},
-              document.title,
-              window.location.pathname + window.location.search,
-            );
-          }
+          clearAuthParamsFromUrl();
         }
         return;
       }
 
-      if (!code) {
+      if (!resolvedCode) {
+        if (!hasCheckedCodeParam) {
+          return;
+        }
         if (!cancelled) {
           setSessionState({
             status: "error",
@@ -73,7 +104,7 @@ export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
         return;
       }
 
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(resolvedCode);
 
       if (cancelled) {
         return;
@@ -83,6 +114,7 @@ export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
         setSessionState({ status: "error", message: exchangeError.message });
       } else {
         setSessionState({ status: "ready" });
+        clearAuthParamsFromUrl(true);
       }
     };
 
@@ -91,7 +123,7 @@ export const ResetPasswordForm = ({ code }: ResetPasswordFormProps) => {
     return () => {
       cancelled = true;
     };
-  }, [code, supabase]);
+  }, [hasCheckedCodeParam, resolvedCode, supabase]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
