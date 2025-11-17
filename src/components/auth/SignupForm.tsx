@@ -88,7 +88,7 @@ export const SignupForm = () => {
       </CardContent>
       <CardFooter className="flex flex-col gap-2 text-sm text-muted-foreground">
         <p>
-          มีบัญชีอยู่แล้วใช่ไหม?{" "}
+          มีบัญชีอยู่แล้วใช่ไหม?
           <Link href="/login" className="text-primary underline">
             ไปที่หน้า Login
           </Link>

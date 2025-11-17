@@ -56,6 +56,12 @@ export const LoginForm = () => {
             สมัครสมาชิก
           </Link>
         </p>
+        <p>
+          ลืมรหัสผ่าน?{" "}
+          <Link href="/forgot-password" className="text-primary underline">
+            รีเซ็ตรหัสผ่าน
+          </Link>
+        </p>
       </CardFooter>
     </Card>
   );
