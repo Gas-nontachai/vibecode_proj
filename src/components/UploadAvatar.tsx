@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase";
+import Image from 'next/image'
 import { Input } from "@/components/ui/input";
 import { v4 as uuid } from "uuid";
 
@@ -82,11 +83,12 @@ export const UploadAvatar = ({
       />
       {preview && (
         <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={preview}
             alt="avatar preview"
-            className="h-16 w-16 rounded-full border border-border object-cover"
+            width={64}
+            height={64}
+            className="rounded-full border border-border object-cover"
           />
           <p className="text-sm text-muted-foreground">
             ไฟล์ล่าสุด: {preview.split("/").pop()}
