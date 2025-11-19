@@ -1,67 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UploadAvatar } from "@/components/UploadAvatar";
-import type { Tables } from "@/lib/database.types";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<Tables["profiles"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    const fetchProfile = async () => {
-      setError(null);
-      setLoading(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        setError(userError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const { data, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (!ignore) {
-        if (profileError) {
-          setError(profileError.message);
-        } else {
-          setProfile(data);
-        }
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-    return () => {
-      ignore = true;
-    };
-  }, [router, supabase]);
+  const { profile, loading, error, supabase } = useProfile();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/login");
+  };
+
+  const handleEditProfile = () => {
+    router.push("/dashboard/update-profile");
   };
 
   const initials =
@@ -75,16 +30,19 @@ export default function DashboardPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
       <Card className="w-full max-w-3xl">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
             <CardTitle className="text-2xl font-semibold">Dashboard</CardTitle>
             <p className="text-sm text-muted-foreground">
               จัดการโปรไฟล์และ Avatar ของคุณ
             </p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            ออกจากระบบ
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleEditProfile}>แก้ไขโปรไฟล์</Button>
+            <Button variant="outline" onClick={handleSignOut}>
+              ออกจากระบบ
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-10">
           {loading ? (
@@ -112,20 +70,6 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              <section className="space-y-4">
-                <h4 className="text-lg font-semibold text-foreground">
-                  อัปโหลดรูปโปรไฟล์ใหม่
-                </h4>
-                <UploadAvatar
-                  profileId={profile.id}
-                  avatarUrl={profile.avatar_url}
-                  onAvatarUpdated={(url) =>
-                    setProfile((current) =>
-                      current ? { ...current, avatar_url: url } : current,
-                    )
-                  }
-                />
-              </section>
             </>
           ) : (
             <p className="text-muted-foreground">ไม่พบข้อมูลโปรไฟล์</p>

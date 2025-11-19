@@ -97,3 +97,30 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   redirect("/login");
 };
+
+export const requestPasswordResetAction = async (
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> => {
+  const supabase = await createServerSupabaseClient();
+  const email = formData.get("email")?.toString();
+
+  const errorMessage = validateRequiredFields({ "อีเมล": email });
+  if (errorMessage) {
+    return { error: errorMessage };
+  }
+
+  const redirectTo = process.env.NEXT_PUBLIC_PASSWORD_RESET_REDIRECT
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email!.trim(), {
+    redirectTo,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    success: "ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลเรียบร้อยแล้ว",
+  };
+};

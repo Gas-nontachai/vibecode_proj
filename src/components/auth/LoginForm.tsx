@@ -51,9 +51,15 @@ export const LoginForm = () => {
       </CardContent>
       <CardFooter className="flex flex-col gap-2 text-sm text-muted-foreground">
         <p>
-          ยังไม่มีบัญชี?{" "}
+          ยังไม่มีบัญชี?
           <Link href="/signup" className="text-primary underline">
             สมัครสมาชิก
+          </Link>
+        </p>
+        <p>
+          ลืมรหัสผ่าน?
+          <Link href="/forgot-password" className="text-primary underline">
+            รีเซ็ตรหัสผ่าน
           </Link>
         </p>
       </CardFooter>
