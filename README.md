@@ -23,7 +23,7 @@
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    NEXT_PUBLIC_PASSWORD_RESET_REDIRECT=http://localhost:3000/login
    ```
-3. ตรวจสอบว่า Supabase project มีตาราง `profiles` และ Storage bucket `avatar_imgs (public)` ตาม schema
+3. รันสคริปต์ใน `supabase/schema.sql` และสร้าง Storage bucket `avatar_imgs (public)` ตามขั้นตอนใน `supabase/README.md`
 
 ### การติดตั้งและรัน
 ```bash
@@ -42,5 +42,6 @@ npm run dev
 - `src/components/UploadAvatar.tsx` – logic สำหรับอัปโหลด avatar UUID -> Supabase Storage
 - `src/lib/supabase.ts` – createBrowserClient อ่าน env จาก `NEXT_PUBLIC_SUPABASE_*`
 - `.env.example` – ตัวอย่าง environment variables
+- `supabase/*` – SQL schema + ขั้นตอนตั้งค่า Supabase
 
 เพียงเชื่อมต่อ Supabase ก็ได้ Mini Auth System ที่พร้อมนำไปต่อยอด 🎉
