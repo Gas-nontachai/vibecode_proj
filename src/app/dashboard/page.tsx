@@ -1,62 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import type { Tables } from "@/lib/database.types";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<Tables["profiles"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-    const fetchProfile = async () => {
-      setError(null);
-      setLoading(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        setError(userError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const { data, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (!ignore) {
-        if (profileError) {
-          setError(profileError.message);
-        } else {
-          setProfile(data);
-        }
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-    return () => {
-      ignore = true;
-    };
-  }, [router, supabase]);
+  const { profile, loading, error, supabase } = useProfile();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

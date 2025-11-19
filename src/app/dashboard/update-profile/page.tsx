@@ -1,10 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useActionState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
-import type { Tables } from "@/lib/database.types";
 import {
   Card,
   CardContent,
@@ -18,103 +15,27 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UploadAvatar } from "@/components/UploadAvatar";
+import { useProfile } from "@/hooks/useProfile";
+import { updateProfileAction } from "@/actions/profile";
+import { updateProfileInitialState } from "@/actions/profile-state";
+import { FormSubmitButton } from "@/components/forms/FormSubmitButton";
 
 export default function UpdateProfilePage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState<Tables["profiles"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { profile, setProfile, loading, error: profileError } = useProfile();
+  const [state, formAction] = useActionState(updateProfileAction, updateProfileInitialState);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    let ignore = false;
-    const fetchProfile = async () => {
-      setError(null);
-      setLoading(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        setError(userError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const { data, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (!ignore) {
-        if (profileError) {
-          setError(profileError.message);
-        } else {
-          setProfile(data);
-        }
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-    return () => {
-      ignore = true;
-    };
-  }, [router, supabase]);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!profile) return;
-
-    const formData = new FormData(event.currentTarget);
-    const fullName = formData.get("full_name")?.toString().trim() ?? "";
-    const nickname = formData.get("nickname")?.toString().trim() ?? "";
-    const phone = formData.get("phone")?.toString().trim() ?? "";
-
-    if (!fullName) {
-      setError("กรุณากรอกชื่อ-นามสกุล");
-      return;
+    if (state.profile) {
+      setProfile(state.profile);
     }
+  }, [setProfile, state.profile]);
 
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName,
-        nickname: nickname || null,
-        phone: phone || null,
-      })
-      .eq("id", profile.id);
-
-    if (updateError) {
-      setError(updateError.message);
-    } else {
-      setSuccess("อัปเดตข้อมูลโปรไฟล์เรียบร้อยแล้ว");
-      setProfile((current) =>
-        current
-          ? {
-              ...current,
-              full_name: fullName,
-              nickname: nickname || null,
-              phone: phone || null,
-            }
-          : current,
-      );
-    }
-
-    setSaving(false);
+  const handleFormAction = (formData: FormData) => {
+    startTransition(() => {
+      formAction(formData);
+    });
   };
 
   const handleCancel = () => {
@@ -137,20 +58,20 @@ export default function UpdateProfilePage() {
             <CardTitle className="text-2xl font-semibold">แก้ไขโปรไฟล์</CardTitle>
             <CardDescription>อัปเดตข้อมูลส่วนตัวหลังจากเข้าสู่ระบบ</CardDescription>
           </div>
-          <Button variant="outline" onClick={() => router.push("/dashboard")} disabled={saving}>
+          <Button variant="outline" onClick={() => router.push("/dashboard")} disabled={isPending}>
             กลับ Dashboard
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
           {loading ? (
             <p className="text-muted-foreground">กำลังโหลดข้อมูล...</p>
-          ) : error && !profile ? (
+          ) : profileError && !profile ? (
             <Alert variant="destructive">
               <AlertTitle>เกิดข้อผิดพลาด</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{profileError}</AlertDescription>
             </Alert>
           ) : profile ? (
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" action={handleFormAction}>
               <section className="space-y-4">
                 <h4 className="text-lg font-semibold text-foreground">รูปโปรไฟล์</h4>
                 <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
@@ -182,7 +103,7 @@ export default function UpdateProfilePage() {
                   name="full_name"
                   placeholder="ชื่อ-นามสกุล"
                   defaultValue={profile.full_name ?? ""}
-                  disabled={saving}
+                  disabled={isPending}
                   required
                 />
               </div>
@@ -193,7 +114,7 @@ export default function UpdateProfilePage() {
                   name="nickname"
                   placeholder="ชื่อเล่น"
                   defaultValue={profile.nickname ?? ""}
-                  disabled={saving}
+                  disabled={isPending}
                 />
               </div>
               <div className="space-y-2">
@@ -204,21 +125,21 @@ export default function UpdateProfilePage() {
                   type="tel"
                   placeholder="08x-xxx-xxxx"
                   defaultValue={profile.phone ?? ""}
-                  disabled={saving}
+                  disabled={isPending}
                 />
               </div>
 
               <div className="space-y-3">
-                {error && (
+                {state.error && (
                   <Alert variant="destructive">
                     <AlertTitle>ไม่สามารถบันทึกได้</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>{state.error}</AlertDescription>
                   </Alert>
                 )}
-                {success && (
+                {state.success && (
                   <Alert variant="success">
                     <AlertTitle>สำเร็จ</AlertTitle>
-                    <AlertDescription>{success}</AlertDescription>
+                    <AlertDescription>{state.success}</AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -228,13 +149,15 @@ export default function UpdateProfilePage() {
                   type="button"
                   variant="ghost"
                   onClick={handleCancel}
-                  disabled={saving}
+                  disabled={isPending}
                 >
                   ยกเลิก
                 </Button>
-                <Button type="submit" disabled={saving}>
-                  {saving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
-                </Button>
+                <FormSubmitButton
+                  idleText="บันทึกการเปลี่ยนแปลง"
+                  pendingText="กำลังบันทึก..."
+                  className="w-full sm:w-auto"
+                />
               </div>
             </form>
           ) : (
