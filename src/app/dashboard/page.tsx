@@ -8,7 +8,9 @@ import { useProfile } from "@/hooks/useProfile";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, loading, error, supabase } = useProfile();
+  const { profile, loading, error, supabase } = useProfile({
+    redirectToLoginOnError: true,
+  });
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -26,7 +28,6 @@ export default function DashboardPage() {
       .join("")
       .slice(0, 2)
       .toUpperCase() ?? "ME";
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
       <Card className="w-full max-w-3xl">

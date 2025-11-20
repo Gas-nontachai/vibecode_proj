@@ -22,7 +22,9 @@ import { FormSubmitButton } from "@/components/forms/FormSubmitButton";
 
 export default function UpdateProfilePage() {
   const router = useRouter();
-  const { profile, setProfile, loading, error: profileError } = useProfile();
+  const { profile, setProfile, loading, error: profileError } = useProfile({
+    redirectToLoginOnError: true,
+  });
   const [state, formAction] = useActionState(updateProfileAction, updateProfileInitialState);
   const [isPending, startTransition] = useTransition();
 

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const variants: Record<string, string> = {
   default: "bg-muted text-foreground",
   destructive: "border-destructive/50 text-destructive",
-  success: "border-green-500/60 bg-green-500/10 text-green-700 dark:text-green-300",
+  success: "border-green-500/60 bg-green-500/10 text-green-700",
 };
 
 export interface AlertProps
