@@ -49,6 +49,9 @@ export default function UpdateProfilePage() {
       .join("")
       .slice(0, 2)
       .toUpperCase() ?? "ME";
+  if (profileError) {
+    Promise.resolve().then(() => router.replace("/login"));
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
