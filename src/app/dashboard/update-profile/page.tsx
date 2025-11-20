@@ -22,7 +22,9 @@ import { FormSubmitButton } from "@/components/forms/FormSubmitButton";
 
 export default function UpdateProfilePage() {
   const router = useRouter();
-  const { profile, setProfile, loading, error: profileError } = useProfile();
+  const { profile, setProfile, loading, error: profileError } = useProfile({
+    redirectToLoginOnError: true,
+  });
   const [state, formAction] = useActionState(updateProfileAction, updateProfileInitialState);
   const [isPending, startTransition] = useTransition();
 
@@ -49,9 +51,6 @@ export default function UpdateProfilePage() {
       .join("")
       .slice(0, 2)
       .toUpperCase() ?? "ME";
-  if (profileError) {
-    Promise.resolve().then(() => router.replace("/login"));
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">

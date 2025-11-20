@@ -14,7 +14,13 @@ type UseProfileResult = {
   supabase: ReturnType<typeof createClient>;
 };
 
-export const useProfile = (): UseProfileResult => {
+type UseProfileOptions = {
+  redirectToLoginOnError?: boolean;
+};
+
+export const useProfile = (
+  { redirectToLoginOnError = false }: UseProfileOptions = {},
+): UseProfileResult => {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [profile, setProfile] = useState<Tables["profiles"] | null>(null);
@@ -85,6 +91,13 @@ export const useProfile = (): UseProfileResult => {
       active = false;
     };
   }, [applyResult, fetchProfile]);
+
+  useEffect(() => {
+    if (!redirectToLoginOnError || !error) {
+      return;
+    }
+    router.replace("/login");
+  }, [error, redirectToLoginOnError, router]);
 
   return {
     profile,
